@@ -4,5 +4,10 @@
       "source": "/api/news",
       "destination": "/api/news.js"
     }
-  ]
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  }
 }
