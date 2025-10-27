@@ -57,7 +57,7 @@ export default function App() {
   };
 
   const NEWS_API_KEY = import.meta.env.VITE_NEWS_API_KEY;
-  const NEWS_API_URL = 'https://newsapi.org/v2/everything';
+  const GNEWS_API_URL = 'https://gnews.io/api/v4/search'; // Changed to GNews API URL
 
   // Initialize RSS parser
   const parser = new RSSParser();
@@ -81,13 +81,18 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      if (!NEWS_API_KEY || NEWS_API_KEY === 'YOUR_NEWS_API_KEY') {
-        throw new Error("News API key not configured. Please set VITE_NEWS_API_KEY in your .env file.");
+      if (!NEWS_API_KEY || NEWS_API_KEY === 'YOUR_NEWS_API_KEY' || NEWS_API_KEY.length < 10) { // Added a basic length check
+        console.error("NEWS_API_KEY is missing or invalid:", NEWS_API_KEY ? `${NEWS_API_KEY.substring(0, 5)}...${NEWS_API_KEY.substring(NEWS_API_KEY.length - 5)}` : 'Not set');
+        throw new Error("News API key not configured or invalid. Please set VITE_NEWS_API_KEY in your .env file and ensure it's a valid key.");
       }
 
       const categoryQuery = categories.find(cat => cat.id === selectedCategory)?.query || 'AI';
       const query = searchQuery || categoryQuery;
-      const response = await fetch(`${NEWS_API_URL}?q=${query}&language=en&sortBy=publishedAt&apiKey=${NEWS_API_KEY}`);
+      const apiUrl = `${GNEWS_API_URL}?q=${query}&lang=en&max=100&apikey=${NEWS_API_KEY}`;
+      console.log("Fetching from API URL:", apiUrl); // Log the full API URL
+      console.log("Using API Key (masked):", `${NEWS_API_KEY.substring(0, 5)}...${NEWS_API_KEY.substring(NEWS_API_KEY.length - 5)}`); // Log masked API key
+      // Using GNews API
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -96,18 +101,17 @@ export default function App() {
 
       const data = await response.json();
       const fetchedArticles = data.articles
-        .filter(article => article.title !== "[Removed]" && article.urlToImage)
         .map((article, index) => ({
-          id: `${article.source.id || article.source.name}-${index}`,
+          id: `${article.url}-${index}`, // Use article.url for ID as source.id is not available in GNews
           title: article.title,
           summary: article.description,
           source: article.source.name,
           date: article.publishedAt,
           category: categoryQuery, // Assign category based on the current filter
-          image: article.urlToImage,
+          image: article.image, // Changed from article.urlToImage to article.image
           url: article.url,
           trending: Math.random() > 0.7, // Simulate trending
-          saved: savedArticles.has(`${article.source.id || article.source.name}-${index}`),
+          saved: savedArticles.has(`${article.url}-${index}`), // Update savedArticles check
           language: "en"
         }));
       
