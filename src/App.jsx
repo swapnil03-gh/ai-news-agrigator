@@ -57,7 +57,8 @@ export default function App() {
   };
 
   const NEWS_API_KEY = import.meta.env.VITE_NEWS_API_KEY;
-  const GNEWS_API_URL = 'https://gnews.io/api/v4/search'; // Changed to GNews API URL
+  // const GNEWS_API_URL = 'https://gnews.io/api/v4/search'; // Changed to GNews API URL
+  const API_PROXY_URL = '/api/news'; // New proxy API endpoint
 
   // Initialize RSS parser
   const parser = new RSSParser();
@@ -88,11 +89,11 @@ export default function App() {
 
       const categoryQuery = categories.find(cat => cat.id === selectedCategory)?.query || 'AI';
       const query = searchQuery || categoryQuery;
-      const apiUrl = `${GNEWS_API_URL}?q=${query}&lang=en&max=100&apikey=${NEWS_API_KEY}`;
-      console.log("Fetching from API URL:", apiUrl); // Log the full API URL
-      console.log("Using API Key (masked):", `${NEWS_API_KEY.substring(0, 5)}...${NEWS_API_KEY.substring(NEWS_API_KEY.length - 5)}`); // Log masked API key
-      // Using GNews API
-      const response = await fetch(apiUrl);
+      // Call the new proxy API route
+      const proxyApiUrl = `${API_PROXY_URL}?q=${query}&lang=en&max=100`;
+      console.log("Fetching from Proxy API URL:", proxyApiUrl); // Log the full proxy API URL
+      // The API key is now handled by the serverless function, no need to send it from the client
+      const response = await fetch(proxyApiUrl);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -454,14 +455,14 @@ export default function App() {
             ) : error ? (
               <div className="text-center py-12 rounded-lg bg-red-900 text-red-100 shadow">
                 <AlertCircle className="h-12 w-12 mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Error fetching news:</h3>
+                <h3 className="lg:font-medium mb-2">Error fetching news:</h3>
                 <p className="mb-4">{error}</p>
                 <p className="text-sm">Please check your API key and network connection, or the RSS feed URL.</p>
               </div>
             ) : filteredArticles.length === 0 ? (
               <div className="text-center py-12 rounded-lg bg-dark-card shadow">
                 <Brain className="h-12 w-12 mx-auto text-text-muted mb-4" />
-                <h3 className="text-lg font-medium mb-2 text-text-light">No articles found</h3>
+                <h3 className="lg:font-medium mb-2 text-text-light">No articles found</h3>
                 <p className="text-text-muted">
                   Try adjusting your search or category filter, or enter an RSS feed URL.
                 </p>
