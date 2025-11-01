@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Sun, Moon, Bell, Bookmark, BookmarkCheck, TrendingUp, Zap, Brain, Building, Shield, Settings, Clock, Globe, FileText, AlertCircle, Rss } from 'lucide-react'; // Added Moon for theme toggle, Rss for RSS feed
-import RSSParser from 'rss-parser';
-
 // Helper to apply dark class to HTML element
 const applyTheme = (isDark) => {
   if (isDark) {
@@ -59,9 +57,7 @@ export default function App() {
   const NEWS_API_KEY = import.meta.env.VITE_NEWS_API_KEY;
   // const GNEWS_API_URL = 'https://gnews.io/api/v4/search'; // Changed to GNews API URL
   const API_PROXY_URL = '/api/news'; // New proxy API endpoint
-
-  // Initialize RSS parser
-  const parser = new RSSParser();
+  const RSS_PROXY_URL = '/api/rss'; // New RSS proxy endpoint
 
   // Effect to handle clicks outside the notification dropdown
   useEffect(() => {
@@ -82,38 +78,41 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      if (!NEWS_API_KEY || NEWS_API_KEY === 'YOUR_NEWS_API_KEY' || NEWS_API_KEY.length < 10) { // Added a basic length check
-        console.error("NEWS_API_KEY is missing or invalid:", NEWS_API_KEY ? `${NEWS_API_KEY.substring(0, 5)}...${NEWS_API_KEY.substring(NEWS_API_KEY.length - 5)}` : 'Not set');
-        throw new Error("News API key not configured or invalid. Please set VITE_NEWS_API_KEY in your .env file and ensure it's a valid key.");
-      }
-
       const categoryQuery = categories.find(cat => cat.id === selectedCategory)?.query || 'AI';
       const query = searchQuery || categoryQuery;
       // Call the new proxy API route
-      const proxyApiUrl = `${API_PROXY_URL}?q=${query}&lang=en&max=100`;
+      const proxyApiUrl = `${API_PROXY_URL}?q=${query}&lang=en&max=10`;
       console.log("Fetching from Proxy API URL:", proxyApiUrl); // Log the full proxy API URL
       // The API key is now handled by the serverless function, no need to send it from the client
       const response = await fetch(proxyApiUrl);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        const contentType = response.headers.get('content-type');
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } else {
+          const errorText = await response.text();
+          errorMessage = `HTTP error! status: ${response.status}, response: ${errorText.substring(0, 100)}...`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
       const fetchedArticles = data.articles
-        .map((article, index) => ({
-          id: `${article.url}-${index}`, // Use article.url for ID as source.id is not available in GNews
+        .map((article) => ({
+          id: article.url, // GNews provides a unique URL, can use as ID
           title: article.title,
           summary: article.description,
-          source: article.source.name,
-          date: article.publishedAt,
+          source: article.source.name, // GNews has source.name
+          date: article.publishedAt, // GNews uses publishedAt
           category: categoryQuery, // Assign category based on the current filter
-          image: article.image, // Changed from article.urlToImage to article.image
+          image: article.image, // GNews uses 'image'
           url: article.url,
           trending: Math.random() > 0.7, // Simulate trending
-          saved: savedArticles.has(`${article.url}-${index}`), // Update savedArticles check
-          language: "en"
+          saved: savedArticles.has(article.url), // Update savedArticles check
+          language: article.lang // GNews uses 'lang'
         }));
       
       setArticles(fetchedArticles);
@@ -146,28 +145,28 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      console.log("Fetching RSS feed from:", url);
-      // Using a proxy to bypass CORS issues in development. In production, you'd need a proper CORS setup.
-      // const CORS_PROXY = 'https://corsproxy.io/?'; // A simple public CORS proxy
-      const CORS_PROXY = 'https://api.allorigins.win/get?url='; // Another public CORS proxy
-      const feed = await parser.parseURL(CORS_PROXY + encodeURIComponent(url)); // Encode the URL for allorigins.win
-      console.log("Parsed RSS feed:", feed);
+      console.log("Fetching RSS feed from backend proxy:", url);
+      const response = await fetch(`${RSS_PROXY_URL}?url=${encodeURIComponent(url)}`);
 
-      const fetchedArticles = feed.items.map((item, index) => ({
-        id: `${item.guid || item.link}-${index}`,
-        title: item.title,
-        summary: item.contentSnippet || item.summary || item.content || 'No summary available.',
-        source: feed.title || 'RSS Feed',
-        date: item.pubDate,
-        category: 'RSS Feeds',
-        image: item.enclosure && item.enclosure.url ? item.enclosure.url : 'https://via.placeholder.com/400x200?text=No+Image', // Placeholder if no image
-        url: item.link,
-        trending: false, // RSS feeds don't typically have a trending indicator
-        saved: savedArticles.has(`${item.guid || item.link}-${index}`),
-        language: item.language || "en"
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } else {
+          const errorText = await response.text();
+          errorMessage = `HTTP error! status: ${response.status}, response: ${errorText.substring(0, 100)}...`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      const fetchedArticles = data.results.map((article) => ({
+        ...article,
+        saved: savedArticles.has(article.id), // Update savedArticles check
       }));
-      console.log("Formatted RSS articles:", fetchedArticles);
-
+      
       setArticles(fetchedArticles);
       setLastUpdated(new Date());
     } catch (e) {

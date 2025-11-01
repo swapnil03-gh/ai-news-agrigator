@@ -24,4 +24,16 @@ export default defineConfig({
       plugins: [tailwindcss(), autoprefixer()],
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001', // Proxy to our local API server
+        changeOrigin: true,
+        // rewrite: (path) => path.replace('/api', ''), // Removed rewrite rule
+      },
+    },
+  },
+  define: {
+    'process.env.VITE_NEWS_API_KEY': JSON.stringify(process.env.VITE_NEWS_API_KEY)
+  }
 })
