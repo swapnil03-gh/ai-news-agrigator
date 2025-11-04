@@ -1,0 +1,9 @@
+{
+  "build": {
+    "env": {
+      "NEWS_API_KEY": "@news_api_key"
+    }
+  },
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
+}

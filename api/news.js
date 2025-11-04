@@ -1,12 +1,8 @@
 // api/news.js
 import fetch from 'node-fetch';
-export default async function handler(req, res, newsApiKey) {
+export default async function handler(req, res) {
   const { q, lang = 'en', max = 10 } = req.query; // Set default max to 10 for Newsdata.io free plan compatibility, as per documentation
-  const NEWS_API_KEY = newsApiKey || process.env.NEWS_API_KEY; // Use passed key or Vercel environment variable
-  console.log("Serverless Function: NEWS_API_KEY (from process.env):", process.env.NEWS_API_KEY ? "Set" : "Not Set");
-  console.log("Serverless Function: newsApiKey (passed argument):", newsApiKey ? "Set" : "Not Set");
-  console.log("Serverless Function: Final NEWS_API_KEY being used:", NEWS_API_KEY ? "Set" : "Not Set");
-  console.log("Serverless Function: Actual NEWS_API_KEY value:", NEWS_API_KEY ? `${NEWS_API_KEY.substring(0, 5)}...${NEWS_API_KEY.substring(NEWS_API_KEY.length - 5)}` : 'Not Set'); // Mask the key for logs
+  const NEWS_API_KEY = process.env.NEWS_API_KEY; // Use Vercel environment variable directly
 
   if (!NEWS_API_KEY || NEWS_API_KEY === 'YOUR_NEWS_API_KEY' || NEWS_API_KEY.length < 10) {
     console.error("Serverless Function: NEWS_API_KEY is missing or invalid.");

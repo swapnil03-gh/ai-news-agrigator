@@ -2,9 +2,9 @@ import http from 'http';
 import { parse } from 'url';
 import handler from './news.js';
 import rssHandler from './rss.js'; // Import the new RSS handler
-import dotenv from 'dotenv';
+import dotenv from 'dotenv'; // Import dotenv
 
-dotenv.config({ path: '.env' }); // Load environment variables from .env in the root directory
+dotenv.config(); // Load environment variables from .env file
 
 const PORT = process.env.PORT || 3001; // Use a different port than Vite's default
 
@@ -29,7 +29,7 @@ const server = http.createServer(async (req, res) => {
 
   // Route requests based on URL
   if (parsedUrl.pathname === '/api/news') {
-    await handler(req, vercelRes, process.env.VITE_NEWS_API_KEY);
+    await handler(req, vercelRes, process.env.NEWS_API_KEY);
   } else if (parsedUrl.pathname === '/api/rss') { // New RSS route
     await rssHandler(req, vercelRes);
   } else {
@@ -40,5 +40,4 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Local API server listening on http://localhost:${PORT}`);
-  console.log(`VITE_NEWS_API_KEY from .env: ${process.env.VITE_NEWS_API_KEY ? "Set" : "Not Set"}`);
 });
