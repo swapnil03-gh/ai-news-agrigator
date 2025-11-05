@@ -29,7 +29,7 @@ const server = http.createServer(async (req, res) => {
 
   // Route requests based on URL
   if (parsedUrl.pathname === '/api/news') {
-    await handler(req, vercelRes, process.env.NEWS_API_KEY);
+    await handler(req, vercelRes);
   } else if (parsedUrl.pathname === '/api/rss') { // New RSS route
     await rssHandler(req, vercelRes);
   } else {
