@@ -6,7 +6,6 @@
   },
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "ignore": ["api/server.js"],
   "functions": {
     "api/**/*.js": {
       "runtime": "nodejs20.x",
